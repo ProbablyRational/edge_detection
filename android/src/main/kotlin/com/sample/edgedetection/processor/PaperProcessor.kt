@@ -5,7 +5,6 @@ import android.util.Log
 import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgproc.Imgproc
-import kotlin.collections.ArrayList
 
 const val TAG: String = "PaperProcessor"
 
@@ -26,14 +25,14 @@ fun cropPicture(picture: Mat, pts: List<Point>): Mat {
     val widthB = Math.sqrt(Math.pow(tr.x - tl.x, 2.0) + Math.pow(tr.y - tl.y, 2.0))
 
     val dw = Math.max(widthA, widthB)
-    val maxWidth = java.lang.Double.valueOf(dw)!!.toInt()
+    val maxWidth = java.lang.Double.valueOf(dw).toInt()
 
 
     val heightA = Math.sqrt(Math.pow(tr.x - br.x, 2.0) + Math.pow(tr.y - br.y, 2.0))
     val heightB = Math.sqrt(Math.pow(tl.x - bl.x, 2.0) + Math.pow(tl.y - bl.y, 2.0))
 
     val dh = Math.max(heightA, heightB)
-    val maxHeight = java.lang.Double.valueOf(dh)!!.toInt()
+    val maxHeight = java.lang.Double.valueOf(dh).toInt()
 
     val croppedPic = Mat(maxHeight, maxWidth, CvType.CV_8UC4)
 
@@ -57,7 +56,15 @@ fun enhancePicture(src: Bitmap?): Bitmap {
     val src_mat = Mat()
     Utils.bitmapToMat(src, src_mat)
     Imgproc.cvtColor(src_mat, src_mat, Imgproc.COLOR_RGBA2GRAY)
-    Imgproc.adaptiveThreshold(src_mat, src_mat, 255.0, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, 15.0)
+    Imgproc.adaptiveThreshold(
+        src_mat,
+        src_mat,
+        255.0,
+        Imgproc.ADAPTIVE_THRESH_MEAN_C,
+        Imgproc.THRESH_BINARY,
+        15,
+        15.0
+    )
     val result = Bitmap.createBitmap(src?.width ?: 1080, src?.height ?: 1920, Bitmap.Config.RGB_565)
     Utils.matToBitmap(src_mat, result, true)
     src_mat.release()
@@ -75,15 +82,20 @@ private fun findContours(src: Mat): ArrayList<MatOfPoint> {
     cannedImage = Mat(size, CvType.CV_8UC1)
     dilate = Mat(size, CvType.CV_8UC1)
 
-    Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_RGBA2GRAY)
+    Imgproc.cvtColor(src, grayImage, Imgproc.COLOR_BGR2GRAY)
     Imgproc.GaussianBlur(grayImage, grayImage, Size(5.0, 5.0), 0.0)
     Imgproc.threshold(grayImage, grayImage, 20.0, 255.0, Imgproc.THRESH_TRIANGLE)
     Imgproc.Canny(grayImage, cannedImage, 75.0, 200.0)
     Imgproc.dilate(cannedImage, dilate, kernel)
-
     val contours = ArrayList<MatOfPoint>()
     val hierarchy = Mat()
-    Imgproc.findContours(dilate, contours, hierarchy, Imgproc.RETR_LIST, Imgproc.CHAIN_APPROX_SIMPLE)
+    Imgproc.findContours(
+        dilate,
+        contours,
+        hierarchy,
+        Imgproc.RETR_TREE,
+        Imgproc.CHAIN_APPROX_SIMPLE
+    )
     contours.sortByDescending { p: MatOfPoint -> Imgproc.contourArea(p) }
     hierarchy.release()
     grayImage.release()
@@ -105,10 +117,13 @@ private fun getCorners(contours: ArrayList<MatOfPoint>, size: Size): Corners? {
             val c2f = MatOfPoint2f(*contours[index].toArray())
             val peri = Imgproc.arcLength(c2f, true)
             val approx = MatOfPoint2f()
-            Imgproc.approxPolyDP(c2f, approx, 0.02 * peri, true)
+            Imgproc.approxPolyDP(c2f, approx, 0.03 * peri, true)
+            //val area = Imgproc.contourArea(approx)
             val points = approx.toArray().asList()
+            var convex = MatOfPoint()
+            approx.convertTo(convex, CvType.CV_32S)
             // select biggest 4 angles polygon
-            if (points.size == 4) {
+            if (points.size == 4 && Imgproc.isContourConvex(convex)) {
                 val foundPoints = sortPoints(points)
                 return Corners(foundPoints, size)
             }
@@ -122,27 +137,8 @@ private fun getCorners(contours: ArrayList<MatOfPoint>, size: Size): Corners? {
 
 private fun sortPoints(points: List<Point>): List<Point> {
     val p0 = points.minBy { point -> point.x + point.y } ?: Point()
-    val p1 = points.maxBy { point -> point.x - point.y } ?: Point()
+    val p1 = points.minBy { point -> point.y - point.x } ?: Point()
     val p2 = points.maxBy { point -> point.x + point.y } ?: Point()
-    val p3 = points.minBy { point -> point.x - point.y } ?: Point()
-
+    val p3 = points.maxBy { point -> point.y - point.x } ?: Point()
     return listOf(p0, p1, p2, p3)
-}
-
-private fun insideArea(rp: List<Point>, size: Size): Boolean {
-
-    val width = java.lang.Double.valueOf(size.width)!!.toInt()
-    val height = java.lang.Double.valueOf(size.height)!!.toInt()
-    val baseHeightMeasure = height / 8
-    val baseWidthMeasure = width / 8
-
-    val bottomPos = height / 2 + baseHeightMeasure
-    val topPos = height / 2 - baseHeightMeasure
-    val leftPos = width / 2 - baseWidthMeasure
-    val rightPos = width / 2 + baseWidthMeasure
-
-    return rp[0].x <= leftPos && rp[0].y <= topPos
-            && rp[1].x >= rightPos && rp[1].y <= topPos
-            && rp[2].x >= rightPos && rp[2].y >= bottomPos
-            && rp[3].x <= leftPos && rp[3].y >= bottomPos
 }

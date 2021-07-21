@@ -4,16 +4,42 @@ A flutter plugin to detect edges of objects, scan paper, detect corner, detect r
 
 ## Usage:
 
+### iOS
+
+iOS 10.0 of higher is needed to use the plugin. If compiling for any version lower than 10.0 make sure to check the iOS version before using the plugin. Change the minimum platform version to 10 (or higher) in your `ios/Podfile` file.
+
+Add below permission to the `ios/Runner/Info.plist`:
+
+- one with the key `Privacy - Camera Usage Description` and a usage description.
+
+Or in text format add the key:
+
+```xml
+<key>NSCameraUsageDescription</key>
+<string>Can I use the camera please?</string>
+```
+
+### Android
+
+Change the minimum Android sdk version to 21 (or higher) in your `android/app/build.gradle` file.
+
+```
+minSdkVersion 21
+```
+
 ### Add dependency：
+
 Please check the latest version before installation.
+
 ```
 dependencies:
   flutter:
     sdk: flutter
-  edge_detection: ^1.0.5
+  edge_detection: ^1.0.6
 ```
 
 ### Add the following imports to your Dart code:
+
 ```
 import 'package:edge_detection/edge_detection.dart';
 ```
@@ -31,7 +57,7 @@ String imagePath = await EdgeDetection.detectEdge;
   <img src="https://raw.githubusercontent.com/sawankumarbundelkhandi/edge_detection/master/screenshots/demo.gif" alt="Demo" style="margin:auto" width="372" height="686">
 </p>
 
-## Screenshots 
+## Screenshots
 
 # Android
 
@@ -53,7 +79,6 @@ String imagePath = await EdgeDetection.detectEdge;
       </tr>
    </table>
 </div>
-
 
 # iOS
 

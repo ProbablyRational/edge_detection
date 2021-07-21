@@ -37,13 +37,43 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
             Log.i(TAG, "loading opencv error, exit")
             finish()
         }
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED &&
-                ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CAMERA_PERMISSION)
-        } else if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
-        } else if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_CAMERA_PERMISSION)
+        if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    android.Manifest.permission.CAMERA,
+                    android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+                ),
+                REQUEST_CAMERA_PERMISSION
+            )
+        } else if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.CAMERA),
+                REQUEST_CAMERA_PERMISSION
+            )
+        } else if (ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.WRITE_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                REQUEST_CAMERA_PERMISSION
+            )
         }
 
         shut.setOnClickListener {
@@ -66,14 +96,45 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
         finish()
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        if (requestCode == REQUEST_CAMERA_PERMISSION
-                && (grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_GRANTED)) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+
+        var allGranted = false
+        var indexPermission = -1
+
+        if (requestCode == REQUEST_CAMERA_PERMISSION) {
+            if (grantResults.count() == 1) {
+                if (permissions.indexOf(android.Manifest.permission.CAMERA) >= 0) {
+                    indexPermission = permissions.indexOf(android.Manifest.permission.CAMERA)
+                }
+                if (permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE) >= 0) {
+                    indexPermission =
+                        permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                }
+                if (indexPermission >= 0 && grantResults[indexPermission] == PackageManager.PERMISSION_GRANTED) {
+                    allGranted = true
+                }
+            }
+
+            if (grantResults.count() == 2 && (
+                        grantResults[permissions.indexOf(android.Manifest.permission.CAMERA)] == PackageManager.PERMISSION_GRANTED
+                                && grantResults[permissions.indexOf(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)] == PackageManager.PERMISSION_GRANTED)
+            ) {
+                allGranted = true
+            }
+        }
+
+        if (allGranted) {
             showMessage(R.string.camera_grant)
             mPresenter.initCamera()
             mPresenter.updateCamera()
         }
+
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
     }
 
     override fun getDisplay(): Display = windowManager.defaultDisplay
@@ -83,7 +144,6 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
     override fun getPaperRect(): PaperRectangle = paper_rect
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-
         if (requestCode == REQUEST_CODE) {
             if (resultCode == Activity.RESULT_OK) {
                 if (null != data && null != data.extras) {
@@ -93,11 +153,12 @@ class ScanActivity : BaseActivity(), IScanView.Proxy {
                 }
             }
         }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
 
-        if(item.itemId == android.R.id.home){
+        if (item.itemId == android.R.id.home) {
             onBackPressed()
             return true
         }
